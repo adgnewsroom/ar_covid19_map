@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700,300' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+<style>
+
+
+.svg-container3 {
+    position: relative;
+    width: 90%;
+    padding-bottom: 10%;
+}
+
+
+.breakLabels {
+  font-size: 8px;
+}
+
+
+.svg-content {
+    position: absolute;
+}
+
+.counties {
+    stroke: #fff;
+    stroke-width:0.4px;
+}
+
+.counties:hover{
+  opacity: .6;
+}
+
+.counties1 {
+    stroke: #fff;
+    stroke-width:0.4px;
+}
+
+.counties1:hover{
+  opacity: .6;
+}
+
+
+.counties2 {
+    stroke: #fff;
+    stroke-width:0.4px;
+}
+
+.counties2:hover{
+  opacity: .6;
+}
+
+
+.d3-tip {
+  line-height: 0.8;
+  padding: 12px;
+  background: rgba(43,43,43, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+#buttons {
+  transform: translate(320px, -107px);
+  /* padding-top: 670px;
+  padding-left: 300px; */
+  /* z-index: -1000 */
+}
+
+</style>
+<body>
+
+
+    <div class="svg-container3" id="container4"></div>
+
+    <div id="buttons" class="btn-group btn-group-toggle" data-toggle="buttons">
+      <label class="btn btn-secondary active">
+        <input type="radio" name="options" id="option1" checked onclick="updateData()"> Total cases
+      </label>
+      <label class="btn btn-secondary">
+        <input type="radio" name="options" id="option2" onclick="updateData2()"> Deaths
+      </label>
+      <label class="btn btn-secondary">
+        <input type="radio" name="options" id="option3" onclick="updateData3()"> Per capita
+      </label>
+    </div>
+
+<!-- <script src="//d3js.org/d3.v3.min.js"></script> -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/adgnewsroom/virus-tracker/d3.v3.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+<script src="https://d3js.org/queue.v1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+
+
+<!-- <script src="d3-legend.min.js"></script> -->
+<!-- <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script> -->
+
+<script>
+// d3.tip
+// Copyright (c) 2013 Justin Palmer
+//
+// Tooltips for d3.js SVG visualizations
+
+// Public - contructs a new tooltip
+//
+// Returns a tip
+d3v3.tip = function() {
+  var direction = d3_tip_direction,
+      offset    = d3_tip_offset,
+      html      = d3_tip_html,
+      node      = initNode(),
+      svg       = null,
+      point     = null,
+      target    = null
+
+  function tip(vis) {
+    svg = getSVGNode(vis)
+    point = svg.createSVGPoint()
+    document.body.appendChild(node)
+  }
+
+  // Public - show the tooltip on the screen
+  //
+  // Returns a tip
+  tip.show = function() {
+    var args = Array.prototype.slice.call(arguments)
+    if(args[args.length - 1] instanceof SVGElement) target = args.pop()
+
+    var content = html.apply(this, args),
+        poffset = offset.apply(this, args),
+        dir     = direction.apply(this, args),
+        nodel   = d3v3.select(node), i = 0,
+        coords
+
+    nodel.html(content)
+      .style({ opacity: 1, 'pointer-events': 'all' })
+
+    while(i--) nodel.classed(directions[i], false)
+    coords = direction_callbacks.get(dir).apply(this)
+    nodel.classed(dir, true).style({
+      top: (coords.top +  poffset[0]) + 'px',
+      left: (coords.left + poffset[1]) + 'px'
+    })
+
+    return tip
+  }
+
+  // Public - hide the tooltip
+  //
+  // Returns a tip
+  tip.hide = function() {
+    nodel = d3v3.select(node)
+    nodel.style({ opacity: 0, 'pointer-events': 'none' })
+    return tip
+  }
+
+  // Public: Proxy attr calls to the d3 tip container.  Sets or gets attribute value.
+  //
+  // n - name of the attribute
+  // v - value of the attribute
+  //
+  // Returns tip or attribute value
+  tip.attr = function(n, v) {
+    if (arguments.length < 2 && typeof n === 'string') {
+      return d3v3.select(node).attr(n)
+    } else {
+      var args =  Array.prototype.slice.call(arguments)
+      d3v3.selection.prototype.attr.apply(d3v3.select(node), args)
+    }
+
+    return tip
+  }
+
+  // Public: Proxy style calls to the d3 tip container.  Sets or gets a style value.
+  //
+  // n - name of the property
+  // v - value of the property
+  //
+  // Returns tip or style property value
+  tip.style = function(n, v) {
+    if (arguments.length < 2 && typeof n === 'string') {
+      return d3v3.select(node).style(n)
+    } else {
+      var args =  Array.prototype.slice.call(arguments)
+      d3v3.selection.prototype.style.apply(d3v3.select(node), args)
+    }
+
+    return tip
+  }
+
+  // Public: Set or get the direction of the tooltip
+  //
+  // v - One of n(north), s(south), e(east), or w(west), nw(northwest),
+  //     sw(southwest), ne(northeast) or se(southeast)
+  //
+  // Returns tip or direction
+  tip.direction = function(v) {
+    if (!arguments.length) return direction
+    direction = v == null ? v : d3v3.functor(v)
+
+    return tip
+  }
+
+  // Public: Sets or gets the offset of the tip
+  //
+  // v - Array of [x, y] offset
+  //
+  // Returns offset or
+  tip.offset = function(v) {
+    if (!arguments.length) return offset
+    offset = v == null ? v : d3v3.functor(v)
+
+    return tip
+  }
+
+  // Public: sets or gets the html value of the tooltip
+  //
+  // v - String value of the tip
+  //
+  // Returns html value or tip
+  tip.html = function(v) {
+    if (!arguments.length) return html
+    html = v == null ? v : d3v3.functor(v)
+
+    return tip
+  }
+
+  function d3_tip_direction() { return 'n' }
+  function d3_tip_offset() { return [0, 0] }
+  function d3_tip_html() { return ' ' }
+
+  var direction_callbacks = d3v3.map({
+    n:  direction_n,
+    s:  direction_s,
+    e:  direction_e,
+    w:  direction_w,
+    nw: direction_nw,
+    ne: direction_ne,
+    sw: direction_sw,
+    se: direction_se
+  }),
+
+  directions = direction_callbacks.keys()
+
+  function direction_n() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.n.y - node.offsetHeight,
+      left: bbox.n.x - node.offsetWidth / 2
+    }
+  }
+
+  function direction_s() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.s.y,
+      left: bbox.s.x - node.offsetWidth / 2
+    }
+  }
+
+  function direction_e() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.e.y - node.offsetHeight / 2,
+      left: bbox.e.x
+    }
+  }
+
+  function direction_w() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.w.y - node.offsetHeight / 2,
+      left: bbox.w.x - node.offsetWidth
+    }
+  }
+
+  function direction_nw() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.nw.y - node.offsetHeight,
+      left: bbox.nw.x - node.offsetWidth
+    }
+  }
+
+  function direction_ne() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.ne.y - node.offsetHeight,
+      left: bbox.ne.x
+    }
+  }
+
+  function direction_sw() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.sw.y,
+      left: bbox.sw.x - node.offsetWidth
+    }
+  }
+
+  function direction_se() {
+    var bbox = getScreenBBox()
+    return {
+      top:  bbox.se.y,
+      left: bbox.e.x
+    }
+  }
+
+  function initNode() {
+    var node = d3v3.select(document.createElement('div'))
+    node.style({
+      position: 'absolute',
+      opacity: 0,
+      pointerEvents: 'none',
+      boxSizing: 'border-box'
+    })
+
+    return node.node()
+  }
+
+  function getSVGNode(el) {
+    el = el.node()
+    if(el.tagName.toLowerCase() == 'svg')
+      return el
+
+    return el.ownerSVGElement
+  }
+
+  // Private - gets the screen coordinates of a shape
+  //
+  // Given a shape on the screen, will return an SVGPoint for the directions
+  // n(north), s(south), e(east), w(west), ne(northeast), se(southeast), nw(northwest),
+  // sw(southwest).
+  //
+  //    +-+-+
+  //    |   |
+  //    +   +
+  //    |   |
+  //    +-+-+
+  //
+  // Returns an Object {n, s, e, w, nw, sw, ne, se}
+  function getScreenBBox() {
+    var targetel   = target || d3v3.event.target,
+        bbox       = {},
+        matrix     = targetel.getScreenCTM(),
+        tbbox      = targetel.getBBox(),
+        width      = tbbox.width,
+        height     = tbbox.height,
+        x          = tbbox.x,
+        y          = tbbox.y,
+        scrollTop  = document.documentElement.scrollTop || document.body.scrollTop,
+        scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
+
+
+    point.x = x + scrollLeft
+    point.y = y + scrollTop
+    bbox.nw = point.matrixTransform(matrix)
+    point.x += width
+    bbox.ne = point.matrixTransform(matrix)
+    point.y += height
+    bbox.se = point.matrixTransform(matrix)
+    point.x -= width
+    bbox.sw = point.matrixTransform(matrix)
+    point.y -= height / 2
+    bbox.w  = point.matrixTransform(matrix)
+    point.x += width
+    bbox.e = point.matrixTransform(matrix)
+    point.x -= width / 2
+    point.y -= height / 2
+    bbox.n = point.matrixTransform(matrix)
+    point.y += height
+    bbox.s = point.matrixTransform(matrix)
+
+    return bbox
+  }
+
+  return tip
+};
+
+
+
+
+
+
+d3v3.svg.legend = function() {
+
+    var legendValues=[{color: "red", stop: [0,1]},{color: "blue", stop: [1,2]},{color: "purple", stop: [2,3]},{color: "yellow", stop: [3,4]},{color: "Aquamarine", stop: [4,5]}];
+    var legendScale;
+    var cellWidth = 30;
+    var cellHeight = 20;
+    var adjustable = false;
+    var labelFormat = d3v3.format("1f");
+    var labelUnits = "units";
+    var lastValue = 6;
+    var changeValue = 1;
+    var orientation = "horizontal";
+    var cellPadding = 0;
+
+    function legend(g) {
+
+    function redraw() {
+
+        g.selectAll("g.legendCells").data(legendValues).exit().remove();
+        g.selectAll("g.legendCells").select("rect").style("fill", function(d) {return d.color});
+        if (orientation == "vertical") {
+            g.selectAll("g.legendCells").select("text.breakLabels").style("display", "block").style("text-anchor", "start").attr("x", cellWidth + cellPadding).attr("y", 5 + (cellHeight / 2)).text(function(d) {return labelFormat(d.stop[0]) + (d.stop[1].length > 0 ? " - " + labelFormat(d.stop[1]) : "")})
+            g.selectAll("g.legendCells").attr("transform", function(d,i) {return "translate(0," + (i * (cellHeight + cellPadding)) + ")" });
+        }
+        else {
+            g.selectAll("g.legendCells").attr("transform", function(d,i) {return "translate(" + (i * cellWidth) + ",0)" });
+            g.selectAll("text.breakLabels").style("text-anchor", "middle").attr("x", 0).attr("y", -7).style("display", function(d,i) {return i == 0 ? "none" : "block"}).text(function(d) {return labelFormat(d.stop[0])});
+        }
+    }
+    g.selectAll("g.legendCells")
+    .data(legendValues)
+    .enter()
+    .append("g")
+    .attr("class", "legendCells")
+    .attr("transform", function(d,i) {return "translate(" + (i * (cellWidth + cellPadding)) + ",0)" })
+
+    g.selectAll("g.legendCells")
+    .append("rect")
+    .attr("height", cellHeight)
+    .attr("width", cellWidth)
+    .style("fill", function(d) {return d.color});
+
+    g.selectAll("g.legendCells")
+    .append("text")
+    .attr("class", "breakLabels")
+    .style("pointer-events", "none");
+
+    redraw();
+    }
+
+    legend.inputScale = function(newScale) {
+        if (!arguments.length) return scale;
+            scale = newScale;
+            legendValues = [];
+            if (scale.invertExtent) {
+                //Is a quantile scale
+                scale.range().forEach(function(el) {
+                    var cellObject = {color: el, stop: scale.invertExtent(el)}
+                    legendValues.push(cellObject)
+                })
+            }
+            else {
+                scale.domain().forEach(function (el) {
+                    var cellObject = {color: scale(el), stop: [el,""]}
+                    legendValues.push(cellObject)
+                })
+            }
+            return this;
+    }
+
+    legend.cellWidth = function(newCellSize) {
+        if (!arguments.length) return cellWidth;
+            cellWidth = newCellSize;
+            return this;
+    }
+
+    legend.cellHeight = function(newCellSize) {
+        if (!arguments.length) return cellHeight;
+            cellHeight = newCellSize;
+            return this;
+    }
+
+    legend.cellStepping = function(incStep) {
+        if (!arguments.length) return changeValue;
+            changeValue = incStep;
+            return this;
+    }
+
+    legend.units = function(incUnits) {
+        if (!arguments.length) return labelUnits;
+            labelUnits = incUnits;
+            return this;
+    }
+
+
+
+
+return legend;
+
+}
+
+
+
+
+
+
+
+var svgContainer3 = d3v3.select('div#container4');
+
+var svg = svgContainer3.append('svg')
+.attr("preserveAspectRatio", "xMinYMin meet")
+.attr("viewBox", "0 -250 950 950")
+.classed("svg-content", true);
+
+
+
+var tip = d3v3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-5, 0])
+  .html(function(d) {
+    var dataRow = countryById.get(d.properties.name);
+       if (dataRow) {
+           console.log(dataRow);
+           return dataRow.features__properties__county_nam + "<br>" + "</br>" + "Confirmed cases: " + dataRow.positive + "<br>" + "</br>" + "Deaths: "
+           + dataRow.deaths + "<br>" + "</br>" + "Rocoveries: " + dataRow.recoveries + "<br>" + "</br>" +
+           "Negative tests: " + dataRow.negative;
+       } else {
+           console.log("no dataRow", d);
+           return d.properties.name + ": No data.";
+       }
+  })
+
+svg.call(tip);
+
+var projection = d3v3.geo.albers()
+    .scale(7000) // mess with this if you want
+    .translate([150, -450])
+    .rotate([93,0]);
+
+
+var path = d3v3.geo.path()
+    .projection(projection);
+
+var colorScale = d3v3.scale.threshold().domain([1, 5, 20, 50, 100, 500,])
+.range(['#d3d3d3', '#fef0d9', '#fdcc8a', '#fc8d59', '#e34a33', '#b30000']);
+
+
+var horizontalLegend = d3v3.svg.legend().units(" ").cellWidth(30).cellHeight(10).inputScale(colorScale).cellStepping(100);
+
+  d3v3.select("svg").append("g").attr("transform", "translate(200,-230)").attr("class", "legend").call(horizontalLegend);
+
+
+var countryById = d3v3.map();
+
+
+// we use queue because we have 2 data files to load.
+queue()
+    .defer(d3v3.json, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/arkansas.json")
+    .defer(d3v3.csv, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/result.csv", typeAndSet) // process
+    .await(loaded);
+
+function typeAndSet(d) {
+    d.positive = +d.features__properties__positive;
+    d.deaths = +d.features__properties__deaths;
+    d.recoveries = +d.features__properties__Recoveries;
+    d.negative = +d.features__properties__negative;
+    countryById.set(d.features__properties__county_nam, d);
+    return d;
+}
+
+function getColor(d) {
+    var dataRow = countryById.get(d.properties.name, +d.deaths, +d.recoveries, +d.negative);
+    if (dataRow) {
+        return colorScale(dataRow.positive);
+    } else {
+        return "#ccc";
+    }
+}
+
+
+function loaded(error, ar, features__properties__positive) {
+
+
+    var counties = topojson.feature(ar, ar.objects.test).features;
+
+    svg.selectAll('path.counties')
+        .data(counties)
+        .enter()
+        .append('path')
+        .attr('class', 'counties')
+        .attr('d', path)
+        .on('mouseover', tip.show)
+        .on('mouseout', tip.hide)
+        .attr('fill', function(d,i) {
+            return getColor(d);
+        })
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function updateData2() {
+
+  $("path.counties").hide();
+
+  $("path.counties2").hide();
+
+
+  var svgContainer3 = d3v3.select('div#container4');
+
+  var svg = svgContainer3.append('svg')
+  .attr("preserveAspectRatio", "xMinYMin meet")
+  .attr("viewBox", "0 -250 950 950")
+  .classed("svg-content", true);
+
+
+  var projection = d3v3.geo.albers()
+      .scale(7000) // mess with this if you want
+      .translate([150, -450])
+      .rotate([93,0]);
+
+
+  var path = d3v3.geo.path()
+      .projection(projection);
+
+      var colorScale1 = d3v3.scale.threshold().domain([1, 5, 10, 20, 30, 40,])
+      .range(['#d3d3d3', '#fef0d9', '#fdcc8a', '#fc8d59', '#e34a33', '#b30000']);
+
+
+  var horizontalLegend1 = d3v3.svg.legend().units(" ").cellWidth(30).cellHeight(10).inputScale(colorScale1).cellStepping(100);
+
+    d3v3.select("svg").append("g").attr("transform", "translate(200,-230)").attr("class", "legend2").call(horizontalLegend1);
+
+  var countryById = d3v3.map();
+
+
+  // we use queue because we have 2 data files to load.
+  queue()
+      .defer(d3v3.json, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/arkansas.json")
+      .defer(d3v3.csv, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/result.csv", typeAndSet) // process
+      .await(loaded);
+
+  function typeAndSet(d) {
+      d.positive = +d.features__properties__positive;
+      d.deaths = +d.features__properties__deaths;
+      d.recoveries = +d.features__properties__Recoveries;
+      d.negative = +d.features__properties__negative;
+      countryById.set(d.features__properties__county_nam, d);
+      return d;
+  }
+
+
+  function getColor1(d) {
+      var dataRow = countryById.get(d.properties.name, +d.deaths, +d.recoveries, +d.negative);
+      if (dataRow) {
+          return colorScale1(dataRow.deaths);
+      } else {
+          return "#ccc";
+      }
+  }
+
+
+  function loaded(error, ar, features__properties__positive) {
+
+
+      var counties = topojson.feature(ar, ar.objects.test).features;
+
+      svg.selectAll('path.counties1')
+          .data(counties)
+          .enter()
+          .append('path')
+          .attr('class', 'counties1')
+          .attr('d', path)
+          .on('mouseover', tip.show)
+          .on('mouseout', tip.hide)
+          .attr('fill', function(d,i) {
+              return getColor1(d);
+          })
+  }
+
+
+  $(".legend").hide();
+
+  $(".legend3").hide();
+
+
+
+    }
+
+
+
+    function updateData() {
+
+      $("path.counties1").hide();
+
+      $("path.counties2").hide();
+
+
+      $(".legend2").hide();
+
+      $(".legend3").hide();
+
+
+      var svgContainer3 = d3v3.select('div#container4');
+
+      var svg = svgContainer3.append('svg')
+      .attr("preserveAspectRatio", "xMinYMin meet")
+      .attr("viewBox", "0 -250 950 950")
+      .classed("svg-content", true);
+
+      var colorScale = d3v3.scale.threshold().domain([1, 5, 20, 50, 100, 600,])
+      .range(['#d3d3d3', '#fef0d9', '#fdcc8a', '#fc8d59', '#e34a33', '#b30000']);
+
+
+      var horizontalLegend = d3v3.svg.legend().units(" ").cellWidth(30).cellHeight(10).inputScale(colorScale).cellStepping(100);
+
+        d3v3.select("svg").append("g").attr("transform", "translate(200,-230)").attr("class", "legend").call(horizontalLegend);
+
+
+      var countryById = d3v3.map();
+
+
+      // we use queue because we have 2 data files to load.
+      queue()
+          .defer(d3v3.json, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/arkansas.json")
+          .defer(d3v3.csv, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/result.csv", typeAndSet) // process
+          .await(loaded);
+
+      function typeAndSet(d) {
+          d.positive = +d.features__properties__positive;
+          d.deaths = +d.features__properties__deaths;
+          d.recoveries = +d.features__properties__Recoveries;
+          d.negative = +d.features__properties__negative;
+          countryById.set(d.features__properties__county_nam, d);
+          return d;
+      }
+
+
+      function getColor(d) {
+          var dataRow = countryById.get(d.properties.name, +d.deaths, +d.recoveries, +d.negative);
+          if (dataRow) {
+              return colorScale(dataRow.positive);
+          } else {
+              return "#ccc";
+          }
+      }
+
+
+      function loaded(error, ar, features__properties__positive) {
+
+
+          var counties = topojson.feature(ar, ar.objects.test).features;
+
+          svg.selectAll('path.counties')
+              .data(counties)
+              .enter()
+              .append('path')
+              .attr('class', 'counties')
+              .attr('d', path)
+              .on('mouseover', tip.show)
+              .on('mouseout', tip.hide)
+              .attr('fill', function(d,i) {
+                  return getColor(d);
+              })
+      }
+        }
+
+
+
+
+
+        function updateData3() {
+
+          $("path.counties1").hide();
+
+          $("path.counties").hide();
+
+          $(".legend2").hide();
+
+          $(".legend").hide();
+
+          var svgContainer3 = d3v3.select('div#container4');
+
+          var svg = svgContainer3.append('svg')
+          .attr("preserveAspectRatio", "xMinYMin meet")
+          .attr("viewBox", "0 -250 950 950")
+          .classed("svg-content", true);
+
+
+
+          var tip = d3v3.tip()
+            .attr('class', 'd3-tip')
+            .offset([-5, 0])
+            .html(function(d) {
+              var dataRow = countryById.get(d.properties.name);
+                 if (dataRow) {
+                     console.log(dataRow);
+                     return dataRow.features__properties__county_nam + "<br>" + "</br>" + "Cases per 100,000 people: " + d3v3.format(".1f")(dataRow.positive/d.properties.Pop_2010*100000) + "<br>" + "</br>" + "Deaths: "
+                     + dataRow.deaths + "<br>" + "</br>" + "Rocoveries: " + dataRow.recoveries + "<br>" + "</br>" +
+                     "Negative tests: " + dataRow.negative;
+                 } else {
+                     console.log("no dataRow", d);
+                     return d.properties.name + ": No data.";
+                 }
+            })
+
+          svg.call(tip);
+
+
+
+
+
+          var colorScale2 = d3v3.scale.threshold().domain([1, 10, 50, 100, 200, 800,])
+          .range(['#d3d3d3', '#fef0d9', '#fdcc8a', '#fc8d59', '#e34a33', '#b30000']);
+
+
+          var horizontalLegend = d3v3.svg.legend().units(" ").cellWidth(30).cellHeight(10).inputScale(colorScale2).cellStepping(100);
+
+            d3v3.select("svg").append("g").attr("transform", "translate(200,-230)").attr("class", "legend3").call(horizontalLegend);
+
+
+          var countryById = d3v3.map();
+
+
+          // we use queue because we have 2 data files to load.
+          queue()
+              .defer(d3v3.json, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/arkansas.json")
+              .defer(d3v3.csv, "https://raw.githubusercontent.com/adgnewsroom/virus-tracker/master/result.csv", typeAndSet) // process
+              .await(loaded);
+
+          function typeAndSet(d) {
+              d.positive = +d.features__properties__positive;
+              d.deaths = +d.features__properties__deaths;
+              d.recoveries = +d.features__properties__Recoveries;
+              d.negative = +d.features__properties__negative;
+
+              countryById.set(d.features__properties__county_nam, d);
+              return d;
+          }
+
+
+
+
+// console.log(population)
+
+          function getColor(d) {
+              var dataRow = countryById.get(d.properties.name, +d.deaths, +d.recoveries, +d.negative);
+              if (dataRow) {
+                  return colorScale2(dataRow.positive/d.properties.Pop_2010*100000);
+              } else {
+                  return "#ccc";
+              }
+          }
+
+
+          function loaded(error, ar, features__properties__positive) {
+
+
+              var counties = topojson.feature(ar, ar.objects.test).features;
+
+              svg.selectAll('path.counties2')
+                  .data(counties)
+                  .enter()
+                  .append('path')
+                  .attr('class', 'counties2')
+                  .attr('d', path)
+                  .on('mouseover', tip.show)
+                  .on('mouseout', tip.hide)
+                  .attr('fill', function(d,i) {
+                      return getColor(d);
+                  })
+          }
+            }
+
+</script>
+</body>
+</html>
